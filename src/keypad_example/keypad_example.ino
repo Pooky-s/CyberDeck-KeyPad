@@ -11,7 +11,9 @@ char keys[ROWS][COLS] = {
 };
 
 byte rowPins[ROWS] = {10, 11, 12}; //connect to the row pinouts of the kpd
+//uncomment this line if you are using an esp32-s2 board with those pins
 //byte colPins[COLS] = {23, 24, 25, 26}; //connect to the column pinouts of the kpd
+//uncomment this line if you are using an esp32-s2 board without those pins
 byte colPins[COLS] = {1, 2, 3, 4}; //connect to the column pinouts of the kpd
 
 Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
