@@ -24,7 +24,7 @@ If you already have a working development environment :
 - Copy/paste the EspTinyUSB library (EspTinyUSB -> [sources](#sources)) under `<arduino_installation_dir>/libraries`
 - Compile and upload the `.ino` file located `./src/<name>.ino`
 
-If you don't have a proper development environment, or need more informations go to `./docs/README.md` (-> to be adde)
+If you don't have a proper development environment, or need more informations go to `./docs/README.md` (-> to be added)
 
 ### TODO
 - Software
