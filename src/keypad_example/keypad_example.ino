@@ -1,6 +1,7 @@
 /*TODO :
-- change vars to enable changing key functions
-- reformat website according to v0.0.1 website style
+- add function to convert values read from website to values interpretable as HID_KEY_... by code
+- add function to convert keys read from storage to a value readable by human
+- optimize website 
 - add comments
 */
 
@@ -11,6 +12,12 @@
 #include "AsyncTCP.h"
 #include "SPIFFS.h"
 #include "ESPAsyncWebServer.h"
+#include "FastLED.h"
+
+/* LED vars */
+#define NUM_LEDS 1
+#define DATA_PIN 18
+CRGB leds[NUM_LEDS];
 
 /* WIFI vars*/
 
@@ -25,11 +32,26 @@ IPAddress subnet(255,255,255,0);
 
 AsyncWebServer server(80);
 
+int initialized = 0;
 bool written_to = true;
 
-const char* PARAM_STRING = "inputString";
-const char* PARAM_INT = "inputInt";
-const char* PARAM_FLOAT = "inputFloat";
+int tempKeys[12];
+int keysVars[12] = {
+  HID_KEY_1,
+  HID_KEY_2,
+  HID_KEY_3,
+  HID_KEY_4,
+  HID_KEY_5,
+  HID_KEY_6,
+  HID_KEY_7,
+  HID_KEY_8,
+  HID_KEY_9,
+  HID_KEY_NONE,
+  HID_KEY_0,
+  HID_KEY_KEYPAD_MULTIPLY
+};
+
+char filename[50];
 
 // HTML web page to handle 3 input fields (inputString, inputInt, inputFloat)
 const char index_html[] PROGMEM = R"rawliteral(
@@ -41,19 +63,123 @@ const char index_html[] PROGMEM = R"rawliteral(
       alert("Saved value to ESP SPIFFS");
       setTimeout(function(){ document.location.reload(false); }, 500);   
     }
-  </script></head><body>
+  </script>
+  <style>
+      html 
+      { 
+        font-family: Helvetica;
+        display: inline-block;
+        margin: 0px auto;
+        text-align: center;
+      }
+      body
+      {
+        margin-top: 50px;
+      } 
+      h1 
+      {
+        color: #444444;
+        margin: 50px auto 30px;
+      }
+      h3 
+      {
+        color: #444444;
+        margin-bottom: 50px;
+      }
+      input
+      {
+        display: block;
+        background-color: #ffffff;
+        border: none;
+        padding: 10px 10px;
+        text-decoration: none;
+        margin: 5px 10px 10px;
+        cursor: vertical-text;
+        border-radius: 10px;
+      }
+      #keypad
+      {
+        display: block;
+        background-color: #f0f0ff;
+        padding: 10px 10px;
+        margin: 20px 20px auto;
+        border-radius: 10px;
+      }
+      .button 
+      {
+        display: block;
+        background-color: #3498db;
+        border: none;
+        color: white;
+        padding: 20px 10px;
+        text-decoration: none;
+        font-size: 25px;
+        margin: 5px auto 35px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .button:hover
+      {
+        background-color: #2980b9;
+      }
+      p 
+      {
+        font-size: 14px;
+        color: #888;
+        margin-bottom: 10px;
+      }
+      table
+      {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+      }
+  </style>
+</head><body>
+  <h1>Cyberdeck Keypad</h1>
+  <div id="keypad">
   <form action="/get" target="hidden-form">
-    inputString (current value %inputString%): <input type="text" name="inputString">
-    <input type="submit" value="Submit" onclick="submitMessage()">
+    <!--inputString (current value %inputString%): <input type="text" name="inputString">
+    <input class="button" type="submit" value="Submit" onclick="submitMessage()">
   </form><br>
   <form action="/get" target="hidden-form">
     inputInt (current value %inputInt%): <input type="number" name="inputInt">
-    <input type="submit" value="Submit" onclick="submitMessage()">
+    <input class="button" type="submit" value="Submit" onclick="submitMessage()">
   </form><br>
   <form action="/get" target="hidden-form">
-    inputFloat (current value %inputFloat%): <input type="number" name="inputFloat">
-    <input type="submit" value="Submit" onclick="submitMessage()">
+    inputFloat (current value %inputFloat%): <input type="number" name="inputFloat">...-->
+  <datalist id="keys">
+    <option value="CONTROL">
+    <option value="SHIFT">
+    <option value="UP">
+    <option value="DOWN">
+    <option value="ALT">
+  </datalist>
+  <table id=#allkeys>
+    <tr>
+      <td>Key 1 (%key1%):<input list="keys" name="key1"></td>
+      <td>Key 2 (%key2%):<input list="keys" name="key2"></td>
+      <td>Key 3 (%key3%):<input list="keys" name="key3"></td>
+    </tr>
+    <tr>
+      <td>Key 4 (%key4%):<input list="keys" name="key4"></td>
+      <td>Key 5 (%key5%):<input list="keys" name="key5"></td>
+      <td>Key 6 (%key6%):<input list="keys" name="key6"></td>
+    </tr>
+    <tr>
+      <td>Key 7 (%key7%):<input list="keys" name="key7"></td>
+      <td>Key 8 (%key8%):<input list="keys" name="key8"></td>
+      <td>Key 9 (%key9%):<input list="keys" name="key9"></td>
+    </tr>
+    <tr>
+      <td>Key 10 (%keyA%):<input list="keys" name="keyA"></td>
+      <td>Key 11 (%keyB%):<input list="keys" name="keyB"></td>
+      <td>Key 12 (%keyC%):<input list="keys" name="keyC"></td>
+    </tr>
+  </table>
+    <input class="button" type="submit" value="Submit" onclick="submitMessage()">
   </form>
+  </div>
   <iframe style="display:none" name="hidden-form"></iframe>
 </body></html>)rawliteral";
 
@@ -119,7 +245,6 @@ String readFile(fs::FS &fs, const char * path){
     fileContent+=String((char)file.read());
   }
   Serial.println(fileContent);
-  written_to = false;
   return fileContent;
 }
 
@@ -141,16 +266,63 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
 // Replaces placeholder with stored values
 String processor(const String& var){
   //Serial.println(var);
-  if(var == "inputString"){
-    return readFile(SPIFFS, "/inputString.txt");
-  }
-  else if(var == "inputInt"){
-    return readFile(SPIFFS, "/inputInt.txt");
-  }
-  else if(var == "inputFloat"){
-    return readFile(SPIFFS, "/inputFloat.txt");
+  switch(var[3]){
+    case '1': return readFile(SPIFFS, "/key1.txt");
+      break;  
+    case '2': return readFile(SPIFFS, "/key2.txt");
+      break;  
+    case '3': return readFile(SPIFFS, "/key3.txt");
+      break;  
+    case '4': return readFile(SPIFFS, "/key4.txt");
+      break;  
+    case '5': return readFile(SPIFFS, "/key5.txt");
+      break;  
+    case '6': return readFile(SPIFFS, "/key6.txt");
+      break;        
+    case '7': return readFile(SPIFFS, "/key7.txt");
+      break;  
+    case '8': return readFile(SPIFFS, "/key8.txt");
+      break;  
+    case '9': return readFile(SPIFFS, "/key9.txt");
+      break;  
+    case 'A': return readFile(SPIFFS, "/key10.txt");
+      break;  
+    case 'B': return readFile(SPIFFS, "/key11.txt");
+      break;  
+    case 'C': return readFile(SPIFFS, "/key12.txt");
+      break; 
   }
   return String();
+}
+
+int getKeyMapped(const char key){
+    switch(key){
+    case '1': return keysVars[0];
+      break;  
+    case '2': return keysVars[1];
+      break;  
+    case '3': return keysVars[2];
+      break;  
+    case '4': return keysVars[3];
+      break;  
+    case '5': return keysVars[4];
+      break;  
+    case '6': return keysVars[5];
+      break;        
+    case '7': return keysVars[6];
+      break;  
+    case '8': return keysVars[7];
+      break;  
+    case '9': return keysVars[8];
+      break;  
+    case '*': return keysVars[9];
+      break;  
+    case '0': return keysVars[10];
+      break;  
+    case '#': return keysVars[11];
+      break; 
+  }
+  return 0;
 }
 
 /*default functions*/
@@ -181,48 +353,75 @@ void setup() {
   // Send a GET request to <ESP_IP>/get?inputString=<inputMessage>
   server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
     String inputMessage;
-    // GET inputString value on <ESP_IP>/get?inputString=<inputMessage>
-    if (request->hasParam(PARAM_STRING)) {
-      inputMessage = request->getParam(PARAM_STRING)->value();
-      writeFile(SPIFFS, "/inputString.txt", inputMessage.c_str());
-    }
-    // GET inputInt value on <ESP_IP>/get?inputInt=<inputMessage>
-    else if (request->hasParam(PARAM_INT)) {
-      inputMessage = request->getParam(PARAM_INT)->value();
-      writeFile(SPIFFS, "/inputInt.txt", inputMessage.c_str());
-    }
-    // GET inputFloat value on <ESP_IP>/get?inputFloat=<inputMessage>
-    else if (request->hasParam(PARAM_FLOAT)) {
-      inputMessage = request->getParam(PARAM_FLOAT)->value();
-      writeFile(SPIFFS, "/inputFloat.txt", inputMessage.c_str());
-    }
-    else {
-      inputMessage = "No message sent";
+    int args = request->args();
+    for(int i=0;i<args;i++){
+      Serial.printf("ARG[%s]: '%s'\n", request->argName(i).c_str(), request->arg(i).c_str());
+      if ((request->arg(i)).length() > 0 ){
+        //int n = sprintf(filename,"/%s%s",request->argName(i).c_str(),ext);
+        //Serial.println(filename);
+        inputMessage = request->arg(i);
+        sprintf(filename,"/key%d.txt",i+1);
+        Serial.println(filename);
+        writeFile(SPIFFS, filename, inputMessage.c_str());
+      }
     }
     Serial.println(inputMessage);
     request->send(200, "text/text", inputMessage);
   });
   server.onNotFound(notFound);
   server.begin();
+  FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);
+  delay(500);
 }
 
 void loop() {
   if(written_to){
     // To access your stored values on inputString, inputInt, inputFloat
-    String yourInputString = readFile(SPIFFS, "/inputString.txt");
-    Serial.print("*** Your inputString: ");
+    initialized = 0;
+    leds[0] = CRGB::Green;
+    FastLED.show();
+    /*int yourInputString = readFile(SPIFFS, "/key1.txt").toInt();
+    Serial.print("*** Your key1: ");
     Serial.println(yourInputString);
     
-    int yourInputInt = readFile(SPIFFS, "/inputInt.txt").toInt();
-    Serial.print("*** Your inputInt: ");
+    int yourInputInt = readFile(SPIFFS, "/key2.txt").toInt();
+    Serial.print("*** Your key2: ");
     Serial.println(yourInputInt);
     
-    float yourInputFloat = readFile(SPIFFS, "/inputFloat.txt").toFloat();
-    Serial.print("*** Your inputFloat: ");
-    Serial.println(yourInputFloat);
+    int yourInputFloat = readFile(SPIFFS, "/key3.txt").toInt();
+    Serial.print("*** Your key3: ");
+    Serial.println(yourInputFloat);*/
+    
+    for(int j=0;j<12;j++)
+    {
+      sprintf(filename,"/key%d.txt",j+1);
+      Serial.println(filename);
+      tempKeys[j] = readFile(SPIFFS, filename).toInt();
+      if(tempKeys[j]==0){initialized+=1;  Serial.print(initialized);}
+    }
+    if(initialized!=12){
+      Serial.print("Already initialized.");
+      written_to = false;
+    }
+    else{
+      Serial.print("Not initialized... Initializing.");
+      for(int j=0;j<12;j++)
+      {
+        char value[20];
+        sprintf(filename,"/key%d.txt",j+1);
+        Serial.println(filename);
+        Serial.println(keysVars[j]);
+        sprintf(value,"%d", keysVars[j]);
+        Serial.println(value);
+        writeFile(SPIFFS, filename, value);
+      }
+      written_to = false;
+    }
     delay(5000);
+    leds[0] = CRGB::Black;
+    FastLED.show();
   }
-
+  loopCount++;
   if ( (millis()-startTime)>5000 ) {
     Serial.print("Average loops per second = ");
     Serial.println(loopCount/5);
@@ -237,13 +436,11 @@ void loop() {
       {
         switch (kpd.key[i].kstate) {  // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
           case PRESSED:
-          Serial.print("Wi ");
           dev.sendString(String(kpd.key[i].kchar));
-          Serial.print("Non ");
+          dev.sendKey(getKeyMapped(kpd.key[i].kchar));
           msg = " PRESSED.";
         break;
           case HOLD:
-          dev.sendString(String(kpd.key[i].kchar));
           msg = " HOLD.";
         break;
           case RELEASED:
