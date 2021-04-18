@@ -56,7 +56,7 @@ Projects and Libraries used :
 - [arduino-esp32](https://github.com/espressif/arduino-esp32) by [Espressif](https://github.com/espressif)
 - [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer) by [me-no-dev](https://github.com/me-no-dev) 
 - [AsyncTCP](https://github.com/me-no-dev/AsyncTCP) also by [me-no-dev](https://github.com/me-no-dev) 
-- [FastLED](https://github.com/FastLED/FastLED)
+- [FastLED](https://github.com/FastLED/FastLED) by Jason Coon and Mark Kriegsman 
 - [A little sample code to format the SPIFFS](https://techtutorialsx.com/2019/02/24/esp32-arduino-formatting-the-spiffs-file-system/)
 
 Tutos, demos and other projects that inspired the CyberDeck Keypad.
