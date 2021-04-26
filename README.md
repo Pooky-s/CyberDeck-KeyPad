@@ -1,7 +1,9 @@
 # CyberDeck KeyPad 
 A simple 12-key programmable keypad using an ESP32-S2 for a CyberDeck project.
 
-⚠️ README file under construction ⚠️
+## Disclaimer ⚠️
+
+This project is my first one, also I'm an absolute beginner in pcb design. The project may have some flaws, bugs, errors... It's still under development and is subject to changes. If you have any suggestions, feel free to share them, it will help me learn !  
 
 ## Summary
 - [Requirements](#requirements)
@@ -21,16 +23,17 @@ To build your own Keypad you will need :
 ### Deployment Instructions
 If you already have a working development environment :
 - Install the Arduino core for ESP32 (arduino-esp32 -> [sources](#sources)) under `<arduino_installation_dir>/hardware/espressif/esp32`
-- Copy/paste the EspTinyUSB library (EspTinyUSB -> [sources](#sources)) under `<arduino_installation_dir>/libraries`
-- Compile and upload the `.ino` file located `./src/<name>.ino`
+- Copy/paste the EspTinyUSB library (EspTinyUSB, ESPAsyncWebServer and AsyncTCP  -> [sources](#sources)) under `<arduino_installation_dir>/libraries`
+- Install libraries needed from the library manager (FastLED, Keypad -> [sources](#sources))
+- Compile and upload the `.ino` file located at `./src/<name>.ino`
 
 If you don't have a proper development environment, or need more informations go to `./docs/README.md` (-> to be added)
 
 ### TODO
 - Software
-    + Add function to convert website input to values as HID_KEY_... by code
+    + Add function to convert website input to values as `HID_KEY_...` format
     + Add function to convert keys read from storage to human readable values 
-    + Add multikey macros capability 
+    + Add multikey macro creation
     + Optimize website
     + Optimize code
     + Add comments
