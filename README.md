@@ -39,7 +39,7 @@ If you don't have a proper development environment, or need more informations go
     + Add comments
 - Hardware 
     + Make a testing unit using PCB 
-        -+ Fix ground pins size for Cherry MX swithes 
+        * Fix ground pins size for Cherry MX swithes 
     + Expose pins in v2 
     + Add 2 encoders for mouse control in v2
     + Add LEDs ? 
