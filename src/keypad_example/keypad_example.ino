@@ -1,6 +1,7 @@
 /*TODO :
-- add function to convert values read from website to values interpretable as HID_KEY_... by code
+- add function to convert website input to values as HID_KEY_... by code
 - add function to convert keys read from storage to a value readable by human
+- add multikey macros capability 
 - optimize website 
 - add comments
 */
@@ -28,14 +29,16 @@ IPAddress local_ip(192,168,1,1);
 IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 
-/* Webserver vars */
-
-AsyncWebServer server(80);
-
+/* Setup vars */
+//Used to check if the keypad has been initialized.
 int initialized = 0;
+int tempKeys[12];
+//Used to check changes made to setup. Default is true to get saved Setup.
 bool written_to = true;
 
-int tempKeys[12];
+
+//Default keys setup
+//Check <arduino-esp32-dir>\tools\sdk\esp32s2\include\tinyusb\tinyusb\src\class\hid\hid.h for more keys.
 int keysVars[12] = {
   HID_KEY_1,
   HID_KEY_2,
@@ -50,10 +53,14 @@ int keysVars[12] = {
   HID_KEY_0,
   HID_KEY_KEYPAD_MULTIPLY
 };
-
+//Used to call files.
 char filename[50];
 
-// HTML web page to handle 3 input fields (inputString, inputInt, inputFloat)
+/* Webserver vars */
+
+AsyncWebServer server(80);
+
+// HTML web page to edit setup.
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html><head>
   <title>ESP Input Form</title>
@@ -185,6 +192,7 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 /* HID vars */
 
+//Matrix initialisation.
 const byte ROWS = 3; //four rows
 const byte COLS = 4; //three columns
 char keys[ROWS][COLS] = {
@@ -195,10 +203,11 @@ char keys[ROWS][COLS] = {
 
 byte rowPins[ROWS] = {10, 11, 12}; //connect to the row pinouts of the kpd
 //byte colPins[COLS] = {23, 24, 25, 26}; //connect to the column pinouts of the kpd
-byte colPins[COLS] = {1, 2, 3, 4}; //connect to the column pinouts of the kpd
+byte colPins[COLS] = {3, 2, 1, 0}; //connect to the column pinouts of the kpd
 
 Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
+//Tasks-per-second calculator vars initialisation.
 unsigned long loopCount;
 unsigned long startTime;
 String msg;
@@ -229,6 +238,7 @@ void dataCB(uint8_t report_id, uint8_t report_type, uint8_t const* buffer, uint1
 /*webserver's functions*/
 
 void notFound(AsyncWebServerRequest *request) {
+  Serial.printf("Error 404. \n");
   request->send(404, "text/plain", "Not found");
 }
 
@@ -257,14 +267,25 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
   }
   if(file.print(message)){
     Serial.println("- file written");
-    written_to = true;
   } else {
     Serial.println("- write failed");
   }
 }
 
+int populateKeys(int initialized){
+  //Serial.printf("Populating keys. \n ");
+  for(int j=0;j<12;j++)
+  {
+    sprintf(filename,"/key%d.txt",j+1);
+    tempKeys[j] = readFile(SPIFFS, filename).toInt();
+    if(tempKeys[j]==0){initialized+=1;  Serial.print(initialized);}
+  }
+  return initialized;
+}
+
 // Replaces placeholder with stored values
 String processor(const String& var){
+  //Serial.printf("Processing value. \n");
   //Serial.println(var);
   switch(var[3]){
     case '1': return readFile(SPIFFS, "/key1.txt");
@@ -295,31 +316,57 @@ String processor(const String& var){
   return String();
 }
 
+/* Storage functions */
+//Used to get keys from setup. 
 int getKeyMapped(const char key){
     switch(key){
-    case '1': return keysVars[0];
+//    case '1': return keysVars[0];
+//      break;  
+//    case '2': return keysVars[1];
+//      break;  
+//    case '3': return keysVars[2];
+//      break;  
+//    case '4': return keysVars[3];
+//      break;  
+//    case '5': return keysVars[4];
+//      break;  
+//    case '6': return keysVars[5];
+//      break;        
+//    case '7': return keysVars[6];
+//      break;  
+//    case '8': return keysVars[7];
+//      break;  
+//    case '9': return keysVars[8];
+//      break;  
+//    case '*': return keysVars[9];
+//      break;  
+//    case '0': return keysVars[10];
+//      break;  
+//    case '#': return keysVars[11];
+//      break; 
+    case '1': return tempKeys[0];
       break;  
-    case '2': return keysVars[1];
+    case '2': return tempKeys[1];
       break;  
-    case '3': return keysVars[2];
+    case '3': return tempKeys[2];
       break;  
-    case '4': return keysVars[3];
+    case '4': return tempKeys[3];
       break;  
-    case '5': return keysVars[4];
+    case '5': return tempKeys[4];
       break;  
-    case '6': return keysVars[5];
+    case '6': return tempKeys[5];
       break;        
-    case '7': return keysVars[6];
+    case '7': return tempKeys[6];
       break;  
-    case '8': return keysVars[7];
+    case '8': return tempKeys[7];
       break;  
-    case '9': return keysVars[8];
+    case '9': return tempKeys[8];
       break;  
-    case '*': return keysVars[9];
+    case '#': return tempKeys[9];
       break;  
-    case '0': return keysVars[10];
+    case '0': return tempKeys[10];
       break;  
-    case '#': return keysVars[11];
+    case '*': return tempKeys[11];
       break; 
   }
   return 0;
@@ -347,11 +394,13 @@ void setup() {
   }
   // Send web page with input fields to client
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    //Serial.printf("Sent webpage.");
     request->send_P(200, "text/html", index_html, processor);
   });
 
   // Send a GET request to <ESP_IP>/get?inputString=<inputMessage>
   server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    //Serial.printf("Received key changing.");
     String inputMessage;
     int args = request->args();
     for(int i=0;i<args;i++){
@@ -361,11 +410,13 @@ void setup() {
         //Serial.println(filename);
         inputMessage = request->arg(i);
         sprintf(filename,"/key%d.txt",i+1);
-        Serial.println(filename);
+        //Serial.println(filename);
+        Serial.printf("Writing %s to %s.",inputMessage.c_str(),filename);
         writeFile(SPIFFS, filename, inputMessage.c_str());
       }
     }
-    Serial.println(inputMessage);
+    //Serial.println(inputMessage);
+    written_to = true;
     request->send(200, "text/text", inputMessage);
   });
   server.onNotFound(notFound);
@@ -380,6 +431,7 @@ void loop() {
     initialized = 0;
     leds[0] = CRGB::Green;
     FastLED.show();
+    
     /*int yourInputString = readFile(SPIFFS, "/key1.txt").toInt();
     Serial.print("*** Your key1: ");
     Serial.println(yourInputString);
@@ -391,14 +443,17 @@ void loop() {
     int yourInputFloat = readFile(SPIFFS, "/key3.txt").toInt();
     Serial.print("*** Your key3: ");
     Serial.println(yourInputFloat);*/
+
+    initialized = populateKeys(initialized);
     
-    for(int j=0;j<12;j++)
-    {
-      sprintf(filename,"/key%d.txt",j+1);
-      Serial.println(filename);
-      tempKeys[j] = readFile(SPIFFS, filename).toInt();
-      if(tempKeys[j]==0){initialized+=1;  Serial.print(initialized);}
-    }
+//    for(int j=0;j<12;j++)
+//    {
+//      sprintf(filename,"/key%d.txt",j+1);
+//      Serial.println(filename);
+//      tempKeys[j] = readFile(SPIFFS, filename).toInt();
+//      if(tempKeys[j]==0){initialized+=1;  Serial.print(initialized);}
+//    }
+
     if(initialized!=12){
       Serial.print("Already initialized.");
       written_to = false;
@@ -430,6 +485,7 @@ void loop() {
   }
   if (kpd.getKeys())
   {
+    Serial.printf("Reading key presses \n");
     for (int i=0; i<LIST_MAX; i++)   // Scan the whole key list.
     {
       if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
