@@ -470,6 +470,7 @@ void loop() {
         Serial.println(value);
         writeFile(SPIFFS, filename, value);
       }
+      populateKeys(initialized);
       written_to = false;
     }
     delay(5000);
