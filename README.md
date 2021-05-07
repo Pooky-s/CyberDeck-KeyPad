@@ -32,7 +32,6 @@ If you don't have a proper development environment, or need more informations go
 ### TODO
 - Software
     + Rewrite HID keys definitions 
-    + Investigate "85" bug where writing 85 on key 12 does nothing 
     + Add function to read keys from storage once initialization check is done
     + Add function to convert website input to values as `HID_KEY_...` format
     + Add function to convert keys read from storage to human readable values 
