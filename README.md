@@ -31,6 +31,9 @@ If you don't have a proper development environment, or need more informations go
 
 ### TODO
 - Software
+    + Rewrite HID keys definitions 
+    + Investigate "85" bug where writing 85 on key 12 does nothing 
+    + Add function to read keys from storage once initialization check is done
     + Add function to convert website input to values as `HID_KEY_...` format
     + Add function to convert keys read from storage to human readable values 
     + Add multikey macro creation
@@ -41,6 +44,7 @@ If you don't have a proper development environment, or need more informations go
     + Make a testing unit using PCB 
         * Fix ground pins size for Cherry MX swithes 
         * Bigger holes for mounting solutions 
+        * Add names near pins (silkscreen)
     + Expose pins in v2 
     + Add 2 encoders for mouse control in v2
     + Add LEDs ? 
