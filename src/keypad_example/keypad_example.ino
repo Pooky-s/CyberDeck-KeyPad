@@ -2,12 +2,16 @@
 - add function to convert website input to values as HID_KEY_... by code
 - add function to convert keys read from storage to a value readable by human
 - add multikey macros capability 
-- optimize website 
+- optimize everything
 - add comments
 */
 
+//KeyPad layout var
+#define KEY_LAYOUT FR_LAYOUT
+
 #include "Arduino.h"
 #include "hidkeyboard.h"
+#include "hidkeylayout.h"
 #include "Keypad.h"
 #include "WiFi.h"
 #include "AsyncTCP.h"
@@ -164,24 +168,24 @@ const char index_html[] PROGMEM = R"rawliteral(
   </datalist>
   <table id=#allkeys>
     <tr>
-      <td>Key 1 (%key1%):<input list="keys" name="key1"></td>
-      <td>Key 2 (%key2%):<input list="keys" name="key2"></td>
-      <td>Key 3 (%key3%):<input list="keys" name="key3"></td>
-    </tr>
-    <tr>
-      <td>Key 4 (%key4%):<input list="keys" name="key4"></td>
-      <td>Key 5 (%key5%):<input list="keys" name="key5"></td>
-      <td>Key 6 (%key6%):<input list="keys" name="key6"></td>
-    </tr>
-    <tr>
-      <td>Key 7 (%key7%):<input list="keys" name="key7"></td>
-      <td>Key 8 (%key8%):<input list="keys" name="key8"></td>
-      <td>Key 9 (%key9%):<input list="keys" name="key9"></td>
-    </tr>
-    <tr>
-      <td>Key 10 (%keyA%):<input list="keys" name="keyA"></td>
-      <td>Key 11 (%keyB%):<input list="keys" name="keyB"></td>
-      <td>Key 12 (%keyC%):<input list="keys" name="keyC"></td>
+      <td>Key 1 (%key1%):<input list="keys" value="%key1%" name="key1"></td>
+      <td>Key 2 (%key2%):<input list="keys" value="%key2%" name="key2"></td>
+      <td>Key 3 (%key3%):<input list="keys" value="%key3%" name="key3"></td>
+    </tr>                                   
+    <tr>                                    
+      <td>Key 4 (%key4%):<input list="keys" value="%key4%" name="key4"></td>
+      <td>Key 5 (%key5%):<input list="keys" value="%key5%" name="key5"></td>
+      <td>Key 6 (%key6%):<input list="keys" value="%key6%" name="key6"></td>
+    </tr>                                   
+    <tr>                                    
+      <td>Key 7 (%key7%):<input list="keys" value="%key7%" name="key7"></td>
+      <td>Key 8 (%key8%):<input list="keys" value="%key8%" name="key8"></td>
+      <td>Key 9 (%key9%):<input list="keys" value="%key9%" name="key9"></td>
+    </tr>                                   
+    <tr>                                    
+      <td>Key 10 (%keyA%):<input list="keys" value="%keyA%" name="keyA"></td>
+      <td>Key 11 (%keyB%):<input list="keys" value="%keyB%" name="keyB"></td>
+      <td>Key 12 (%keyC%):<input list="keys" value="%keyC%" name="keyC"></td>
     </tr>
   </table>
     <input class="button" type="submit" value="Submit" onclick="submitMessage()">
@@ -273,7 +277,7 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
 }
 
 int populateKeys(int initialized){
-  //Serial.printf("Populating keys. \n ");
+  Serial.printf("Populating keys. \n ");
   for(int j=0;j<12;j++)
   {
     sprintf(filename,"/key%d.txt",j+1);
@@ -285,7 +289,6 @@ int populateKeys(int initialized){
 
 // Replaces placeholder with stored values
 String processor(const String& var){
-  //Serial.printf("Processing value. \n");
   //Serial.println(var);
   switch(var[3]){
     case '1': return readFile(SPIFFS, "/key1.txt");
@@ -320,30 +323,6 @@ String processor(const String& var){
 //Used to get keys from setup. 
 int getKeyMapped(const char key){
     switch(key){
-//    case '1': return keysVars[0];
-//      break;  
-//    case '2': return keysVars[1];
-//      break;  
-//    case '3': return keysVars[2];
-//      break;  
-//    case '4': return keysVars[3];
-//      break;  
-//    case '5': return keysVars[4];
-//      break;  
-//    case '6': return keysVars[5];
-//      break;        
-//    case '7': return keysVars[6];
-//      break;  
-//    case '8': return keysVars[7];
-//      break;  
-//    case '9': return keysVars[8];
-//      break;  
-//    case '*': return keysVars[9];
-//      break;  
-//    case '0': return keysVars[10];
-//      break;  
-//    case '#': return keysVars[11];
-//      break; 
     case '1': return tempKeys[0];
       break;  
     case '2': return tempKeys[1];
@@ -423,6 +402,7 @@ void setup() {
   server.begin();
   FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);
   delay(500);
+  Serial.printf("Layout : %d\n",KEY_LAYOUT);
 }
 
 void loop() {
@@ -431,28 +411,8 @@ void loop() {
     initialized = 0;
     leds[0] = CRGB::Green;
     FastLED.show();
-    
-    /*int yourInputString = readFile(SPIFFS, "/key1.txt").toInt();
-    Serial.print("*** Your key1: ");
-    Serial.println(yourInputString);
-    
-    int yourInputInt = readFile(SPIFFS, "/key2.txt").toInt();
-    Serial.print("*** Your key2: ");
-    Serial.println(yourInputInt);
-    
-    int yourInputFloat = readFile(SPIFFS, "/key3.txt").toInt();
-    Serial.print("*** Your key3: ");
-    Serial.println(yourInputFloat);*/
 
     initialized = populateKeys(initialized);
-    
-//    for(int j=0;j<12;j++)
-//    {
-//      sprintf(filename,"/key%d.txt",j+1);
-//      Serial.println(filename);
-//      tempKeys[j] = readFile(SPIFFS, filename).toInt();
-//      if(tempKeys[j]==0){initialized+=1;  Serial.print(initialized);}
-//    }
 
     if(initialized!=12){
       Serial.print("Already initialized.");
