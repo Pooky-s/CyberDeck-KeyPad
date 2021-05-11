@@ -26,13 +26,12 @@ If you already have a working development environment :
 - Copy/paste the EspTinyUSB library (EspTinyUSB, ESPAsyncWebServer and AsyncTCP  -> [sources](#sources)) under `<arduino_installation_dir>/libraries`
 - Install libraries needed from the library manager (FastLED, Keypad -> [sources](#sources))
 - Compile and upload the `.ino` file located at `./src/<name>.ino`
+- You will also need to fix 2-3 things on EspTinyUSB and arduino-esp32, I made forks of those projects with fixes applied. 
 
 If you don't have a proper development environment, or need more informations go to `./docs/README.md` (-> to be added)
 
 ### TODO
 - Software
-    + Rewrite HID keys definitions 
-    + Add function to read keys from storage once initialization check is done
     + Add function to convert website input to values as `HID_KEY_...` format
     + Add function to convert keys read from storage to human readable values 
     + Add multikey macro creation
