@@ -8,6 +8,7 @@ This project is my first one, also I'm an absolute beginner in pcb design. The p
 ## Summary
 - [Requirements](#requirements)
 - [Deployment instructions](#deployment-instructions)
+- [Known issues](#known-issues)
 - [TODO](#todo)
 - [Images](#images)
 - [Sources](#sources)
@@ -28,10 +29,14 @@ If you already have a working development environment :
 - Compile and upload the `.ino` file located at `./src/<name>.ino`
 - You will also need to fix 2-3 things on EspTinyUSB and arduino-esp32, I made forks of those projects with fixes applied. 
 
-If you don't have a proper development environment, or need more informations go to `./docs/README.md` (-> to be added)
+If you don't have a proper development environment, or need more informations go to `./docs/INSTALLATION.md` (-> to be added)
+
+### Known issues
+- When pressed at the same time, keys on collumn 1 and 4 on the same row causes key on collumn 1 to loop. It happens only when serial usb isn't connected. 
 
 ### TODO
 - Software
+    + Add initilisation with US, UK or FR layout 
     + Add function to convert website input to values as `HID_KEY_...` format
     + Add function to convert keys read from storage to human readable values 
     + Add multikey macro creation
