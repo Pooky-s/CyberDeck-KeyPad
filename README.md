@@ -32,7 +32,7 @@ If you already have a working development environment :
 If you don't have a proper development environment, or need more informations go to `./docs/INSTALLATION.md` (-> to be added)
 
 ### Known issues
-- When pressed at the same time, keys on collumn 1 and 4 on the same row causes key on collumn 1 to loop. It happens only when serial usb isn't connected. 
+- When pressed at the same time, keys on collumn 1 and 4 on the same row causes key on collumn 1 to loop. It happens only when serial usb isn't connected. This happen apparently because collumn 1 is connected to GPIO0. Connecting this coolumn to another GPIO pin with the correct setup on the firmware seem to fix this.
 
 ### TODO
 - Software
@@ -48,6 +48,7 @@ If you don't have a proper development environment, or need more informations go
         * Fix ground pins size for Cherry MX swithes 
         * Bigger holes for mounting solutions 
         * Add names near pins (silkscreen)
+        * Change column pins from (3, 2, 1, 0) to (4, 3, 2, 1)
     + Expose pins in v2 
     + Add 2 encoders for mouse control in v2
     + Add LEDs ? 
@@ -56,6 +57,7 @@ If you don't have a proper development environment, or need more informations go
     + Add software description 
     + Add pictures of test and final units
     + Add BOM 
+    + Update schematics
     
 ### Images
 
