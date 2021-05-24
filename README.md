@@ -17,6 +17,7 @@ This project is my first one, also I'm an absolute beginner in pcb design. The p
 To build your own Keypad you will need : 
 - some diodes (one for each key) 
 - Switches (here CherryMX switches without diodes nor LEDs)
+- Rotary encoders 
 - ESP32-S2 board (here ESP32-S2-DevKitM-1)
 - a micro-USB female port
 - a PCB or some wires. 
@@ -44,24 +45,24 @@ If you don't have a proper development environment, or need more informations go
     + Optimize code
     + Add comments
 - Hardware 
-    + Make a testing unit using PCB 
-        * Fix ground pins size for Cherry MX swithes 
-        * Bigger holes for mounting solutions 
-        * Add names near pins (silkscreen)
-        * Change column pins from (3, 2, 1, 0) to (4, 3, 2, 1)
-    + Expose pins in v2 
-    + Add 2 encoders for mouse control in v2
+    + Make a testing unit using PCB
+		* Change encoder switch pins from 45/46 to 41/42 (done in files, to be built)
     + Add LEDs ? 
 - Documentation
     + Add step-by-step installation guide
     + Add software description 
     + Add pictures of test and final units
     + Add BOM 
-    + Update schematics
     
 ### Images
 
-![schematic](schemes/png_files/kbd_preview_schematic.png)
+![Schematic](schemes/png_files/encoder/kbd_projekt_encoder_schéma.png)
+Scheme with encoder.
+![Schematic](schemes/png_files/no_encoder/kbd_projekt_no_encoder_schéma.png)
+Scheme without encoder.
+![Image](schemes/png_files/encoder/kbd_projekt_encoder_img.png)
+Testing unit.
+
 Other pics coming soon...
 
 ### Sources 
@@ -73,6 +74,7 @@ Projects and Libraries used :
 - [FastLED](https://github.com/FastLED/FastLED) by Jason Coon and Mark Kriegsman 
 - [Keypad](https://github.com/Chris--A/Keypad) by Mark Stanley and Alexander Brevig, maintained by [Chris--A](https://github.com/Chris--A)
 - [A little sample code to format the SPIFFS](https://techtutorialsx.com/2019/02/24/esp32-arduino-formatting-the-spiffs-file-system/)
+- [ESP32Encoder](https://github.com/madhephaestus/ESP32Encoder) by [madhephaestus](https://github.com/madhephaestus)
 
 Tutos, demos and other projects that inspired the CyberDeck Keypad.
 - [ESP32-S2 USB demo using Arduino IDE](https://www.youtube.com/watch?v=l3MmrVHMd94&ab_channel=LucaDentella) by [Luca Dentella](https://www.youtube.com/channel/UCQewD5sQ1WsJCIAuOMZ2V2w)
