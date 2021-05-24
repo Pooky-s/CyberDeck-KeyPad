@@ -1,5 +1,4 @@
 /*TODO :
-- fix left click function loop
 - add function to convert website input to values as HID_KEY_... by code
 - add function to convert keys read from storage to a value readable by human
 - add multikey macros capability 
@@ -8,90 +7,13 @@
 */
 
 #include "Arduino.h"
-//#include "hidkeyboard.h"
-//#include "hidmouse.h"
-#include "hidcomposite.h"
+#include "hidkeyboard.h"
 #include "Keypad.h"
 #include "WiFi.h"
 #include "AsyncTCP.h"
 #include "SPIFFS.h"
 #include "ESPAsyncWebServer.h"
 #include "FastLED.h"
-#include "ESP32Encoder.h"
-
-
-
-HIDcomposite dev;
-
-/* Encoder vars */
-ESP32Encoder encoderL;
-ESP32Encoder encoderR;
-
-const int encoderSwitchL = 42;
-const int encoderSwitchR = 41;
-long positionEncoderL = -999;
-long positionEncoderR = -999;
-
-void encoder_mouseL(){ //testing some encoder wheel pay control for arcade games; centede, tempest...
-  long newPos = (int32_t)encoderL.getCount();
-  //long newPos = RotaryEncoder.read()/2; 
-  if (newPos != positionEncoderL && newPos > positionEncoderL) {
-    dev.move(newPos - positionEncoderL,0); //moves mouse right... Mouse.move(x, y, wheel) range is -128 to +127
-    positionEncoderL = newPos;
-    //Serial.println("mouseMoveRight");
-                        }
-
-  if (newPos != positionEncoderL && newPos < positionEncoderL) {
-    dev.move(-(positionEncoderL - newPos),0); //moves mouse left... Mouse.move(x, y, wheel) range is -128 to +127
-    positionEncoderL = newPos;
-    //Serial.println("mouseMoveLeft");
-                         }
-}
-void encoder_mouseR(){ //testing some encoder wheel pay control for arcade games; centede, tempest...
-  long newPos = (int32_t)encoderR.getCount();
-  //long newPos = RotaryEncoder.read()/2; 
-  if (newPos != positionEncoderR && newPos > positionEncoderR) {
-    dev.move(0,-(positionEncoderR - newPos)); //moves mouse right... Mouse.move(x, y, wheel) range is -128 to +127
-    positionEncoderR = newPos;
-    //Serial.println("mouseMoveRight");
-                        }
-
-  if (newPos != positionEncoderR && newPos < positionEncoderR) {
-    dev.move(0,newPos - positionEncoderR); //moves mouse left... Mouse.move(x, y, wheel) range is -128 to +127
-    positionEncoderR = newPos;
-    //Serial.println("mouseMoveLeft");
-                         }
-}
-
-int buttonStateL = 0;
-int lastButtonStateL = 0; 
-
-void leftClick(){
-  buttonStateL = digitalRead(encoderSwitchL);
-  if (buttonStateL != lastButtonStateL) {
-    if (buttonStateL == LOW) { 
-      Serial.println("pressed");
-      dev.pressLeft();
-    } 
-    delay(150);
-  }
-  lastButtonStateL = buttonStateL;  
-}
-
-int buttonStateR = 0;
-int lastButtonStateR = 0; 
-
-void rightClick(){
-  buttonStateR = digitalRead(encoderSwitchR);
-  if (buttonStateR != lastButtonStateR) {
-    if (buttonStateR == LOW) { 
-      Serial.println("pressed");
-      dev.pressRight();
-    } 
-    delay(150);
-  }
-  lastButtonStateR = buttonStateR;  
-}
 
 #define DEBUG
 
@@ -324,7 +246,7 @@ unsigned long loopCount;
 unsigned long startTime;
 String msg;
 
-//HIDkeyboard dev;
+HIDkeyboard dev;
 
 /* HID's functions */
 
@@ -464,7 +386,6 @@ int getKeyMapped(const char key){
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  Serial.println("Just booted");
 
   WiFi.softAP(ssid, password);
   WiFi.softAPConfig(local_ip, gateway, subnet);
@@ -473,17 +394,8 @@ void setup() {
   loopCount = 0;
   startTime = millis();
   msg = "";
-  
   dev.begin();
   dev.setCallbacks(new MyHIDCallbacks());
-  
-  encoderL.attachHalfQuad(40, 39);
-  encoderL.setCount(positionEncoderL);
-  encoderR.attachHalfQuad(38, 37);
-  encoderR.setCount(positionEncoderR);
-  pinMode(encoderSwitchL, INPUT_PULLUP);
-  pinMode(encoderSwitchR, INPUT_PULLUP);
-  
   if(!SPIFFS.begin(true)){
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
@@ -561,10 +473,6 @@ void loop() {
     startTime = millis();
     loopCount = 0;
   }
-  leftClick();
-  encoder_mouseL(); 
-  rightClick();
-  encoder_mouseR(); 
   if (kpd.getKeys())
   {
     Serial.printf("Reading key presses \n");
@@ -582,7 +490,6 @@ void loop() {
           msg = " PRESSED.";
         break;
           case HOLD:
-          dev.move(-15, -15);
           msg = " HOLD.";
         break;
           case RELEASED:
